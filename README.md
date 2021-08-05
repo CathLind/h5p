@@ -1,7 +1,10 @@
+
 H5P
 ===========
 
-Create, share and reuse interactive HTML5 content on your site.
+## Changes compared to official H5P file for Drupal.
+1) Drupal 9 patches are added
+2) Some langugage support are removed
 
 ## Instructions
 
