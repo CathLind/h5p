@@ -1,6 +1,6 @@
 name: H5P
 type: module
-description: 'Upload and view interactive HTML5 Packages to your site.'
+description: 'H5P modified version'
 package: H5P
 core_version_requirement: ^8 || ^9
 dependencies:
