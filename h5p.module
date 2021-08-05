@@ -149,7 +149,7 @@ function h5p_library_info_build() {
   ];*/
 
   // Load installed libraries
-  $h5p_libraries = db_query("SELECT library_id AS id,
+  $h5p_libraries = \Drupal::database()->query("SELECT library_id AS id,
                                 machine_name AS name,
                                 major_version AS major,
                                 minor_version AS minor,
@@ -180,7 +180,7 @@ function h5p_library_info_build() {
     }
 
     // Load dependencies
-    $h5p_dependencies = db_query(
+    $h5p_dependencies = \Drupal::database()->query(
         "SELECT hl.machine_name AS name,
                 hl.major_version AS major,
                 hl.minor_version AS minor
@@ -252,13 +252,13 @@ function h5p_cron() {
  *
  * @see hook_ENTITY_TYPE_delete()
  */
-function h5p_user_delete(Drupal\Core\Entity\EntityInterface $entity) {
-  db_delete('h5p_points')
+function h5p_user_delete(\Drupal\Core\Entity\EntityInterface $entity) {
+  \Drupal::database()->delete('h5p_points')
     ->condition('uid', $entity->id())
     ->execute();
 
   // Remove content user data
-  db_delete('h5p_content_user_data')
+  \Drupal::database()->delete('h5p_content_user_data')
     ->condition('user_id', $entity->id())
     ->execute();
 }
