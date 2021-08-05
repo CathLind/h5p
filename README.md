@@ -3,7 +3,7 @@ H5P
 ===========
 
 ## Changes compared to official H5P file for Drupal.
-1) Drupal 9 patches are added
+1) Drupal 9 patches are added (https://www.drupal.org/files/issues/2021-05-28/3150110-drupal9_deprecated_report-27.patch)
 2) Some langugage support are removed
 
 ## Instructions
