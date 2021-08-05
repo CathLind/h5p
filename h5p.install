@@ -7,6 +7,7 @@
 use Drupal\h5p\H5PDrupal\H5PDrupal;
 use Drupal\Core\Database\Query\Condition;
 use Drupal\Core\Field\BaseFieldDefinition;
+use Drupal\Core\Render\Markup;
 
 /**
  * Called when uninstalling H5P. Cleans up files and settings.
@@ -54,12 +55,11 @@ function h5p_uninstall() {
   }
 
   // Show link to h5p.org form
-  $survey_message = \Drupal\Core\Render\Markup::create('H5P has now been disabled. Answer the short survey below and get a chance to win a US $500 Amazon Gift Card.</br><iframe src="http://h5p.org/uninstall-form" width="100%" height="360px" style="border: 0;"></iframe>');
-  drupal_set_message($survey_message);
-
+  $survey_message = Markup::create('H5P has now been disabled. Answer the short survey below and get a chance to win a US $500 Amazon Gift Card.</br><iframe src="http://h5p.org/uninstall-form" width="100%" height="360px" style="border: 0;"></iframe>');
+  \Drupal::messenger()->addStatus($survey_message);
   // Alternative text for drush uninstalls
-  $feedback_message = \Drupal\Core\Render\Markup::create('Leaving because the H5P plugin isn’t working for you? Please share your feedback so we can improve. <a href=\"https://h5p.org/drupal-module-disabled\">https://h5p.org/drupal-module-disabled</a>');
-  drupal_set_message($feedback_message);
+  $feedback_message = Markup::create('Leaving because the H5P plugin isn\'t working for you? Please share your feedback so we can improve. <a href=\"https://h5p.org/drupal-module-disabled\">https://h5p.org/drupal-module-disabled</a>');
+  \Drupal::messenger()->addStatus($feedback_message);
 
   // Intentionally not deleting variable h5p_site_uuid. If h5p module is uninstalled/installed,
   // the uuid should be the same
@@ -74,7 +74,7 @@ function h5p_uninstall() {
 function h5p_install() {
 
   // Notify of communication channels
-  drupal_set_message(
+  \Drupal::messenger()->addStatus(
     t('H5P fetches content types directly from the H5P Hub. In order to do this the H5P plugin will communicate with the Hub once a day to fetch information about new and updated content types. It will send in anonymous data to the Hub about H5P usage. Read more at <a href="https://h5p.org/tracking-the-usage-of-h5p">the plugin communication page at H5P.org</a>.')
   );
 
@@ -256,8 +256,9 @@ function _h5p_recursive_unlink($file, $connection) {
     if ($fid !== false) {
 
       // If it was found delete file and database record
-      $file_object = \Drupal::entityTypeManager()->getStorage('file')->resetCache([$fid]);
-      file_delete($file_object);
+      $file_storage = \Drupal::entityTypeManager()->getStorage('file');
+      $file_object = $file_storage->resetCache([$fid]);
+      $file_storage->delete($file_object);
     } else {
 
       // Delete locally
@@ -835,21 +836,22 @@ function h5p_update_8001(&$sandbox) {
     ->clear('h5p_fetched_library_metadata_on')
     ->save();
 
-  drupal_set_message('Module h5p removed configuration items successfully.');
+  \Drupal::messenger()->addStatus('Module h5p removed configuration items successfully.');
 }
 
 /**
  * Add fields for metadata and addons.
  */
 function h5p_update_8002() {
-  if (!db_field_exists('h5p_libraries', 'add_to')) {
-    db_add_field('h5p_libraries', 'add_to', array(
+  $database = \Drupal::service('database');
+    if (!$database->schema()->fieldExists('h5p_libraries', 'add_to')) {
+      $database->schema()->addField('h5p_libraries', 'add_to', array(
       'description' => 'plugin configuration data',
       'type' => 'text'
     ));
   }
-  if (!db_field_exists('h5p_libraries', 'metadata_settings')) {
-    db_add_field('h5p_libraries', 'metadata_settings', array(
+  if (!$database->schema()->fieldExists('h5p_libraries', 'add_to')) {
+    $database->schema()->addField('h5p_libraries', 'metadata_settings', array(
       'description' => 'Metadata settings',
       'type' => 'text'
     ));
@@ -951,7 +953,7 @@ function h5p_update_8002() {
  * Make the content files permanent
  */
 function h5p_update_8003(&$sandbox) {
-  db_update('file_managed')
+  \Drupal::database()->update('file_managed')
     ->fields(array(
       'status' => 1,
     ))
