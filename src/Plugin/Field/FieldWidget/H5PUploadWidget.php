@@ -2,6 +2,7 @@
 
 namespace Drupal\h5p\Plugin\Field\FieldWidget;
 
+use Drupal\Core\File\FileSystemInterface;
 use Drupal\h5p\Plugin\Field\H5PWidgetBase;
 use Drupal\Core\Field\FieldItemListInterface;
 use Drupal\Core\Form\FormStateInterface;
@@ -66,7 +67,7 @@ class H5PUploadWidget extends H5PWidgetBase {
     $interface = H5PDrupal::getInstance('interface', $file_field);
     $h5p_path = $interface->getOption('default_path', 'h5p');
     $temporary_file_path = "public://{$h5p_path}/temp/" . uniqid('h5p-');
-    file_prepare_directory($temporary_file_path, FILE_CREATE_DIRECTORY);
+    \Drupal::service('file_system')->prepareDirectory($temporary_file_path, FileSystemInterface::CREATE_DIRECTORY);
 
     // Validate file
     $files = file_save_upload($file_field, $validators, $temporary_file_path);
