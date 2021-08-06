@@ -105,7 +105,7 @@ class H5PEditorDrupalStorage implements \H5peditorStorage {
       // Get details for the specified libraries only.
       $librariesWithDetails = array();
       foreach ($libraries as $library) {
-        $details = db_query(
+        $details = \Drupal::database()->query(
           "SELECT title, runnable, restricted, tutorial_url, metadata_settings
            FROM {h5p_libraries}
            WHERE machine_name = :name
@@ -133,8 +133,7 @@ class H5PEditorDrupalStorage implements \H5peditorStorage {
 
     $libraries = array();
 
-    $libraries_result = db_query(
-      "SELECT machine_name AS name,
+    $libraries_result = \Drupal::database()->query("SELECT machine_name AS name,
               title,
               major_version,
               minor_version,
@@ -216,14 +215,14 @@ class H5PEditorDrupalStorage implements \H5peditorStorage {
     $temp_id = uniqid('h5p-');
 
     $temporary_file_path = "public://{$h5p_path}/temp/{$temp_id}";
-    file_prepare_directory($temporary_file_path, FILE_CREATE_DIRECTORY);
+    \Drupal::service('file_system')->prepareDirectory($temporary_file_path, FileSystemInterface::CREATE_DIRECTORY);
     $name = $temp_id . '.h5p';
     $target = $temporary_file_path . DIRECTORY_SEPARATOR . $name;
     if ($move_file) {
       $file = move_uploaded_file($data, $target);
     }
     else {
-      $file = file_unmanaged_save_data($data, $target);
+      $file = \Drupal::service('file_system')->saveData($data, $target);
     }
     if (!$file) {
       return FALSE;
