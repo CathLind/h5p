@@ -2,6 +2,7 @@
 
 namespace Drupal\h5p\Form;
 
+use Drupal\Core\File\FileSystemInterface;
 use Drupal\h5p\H5PDrupal\H5PDrupal;
 use Drupal\h5p\H5PApi\H5PClasses;
 use Drupal\h5p\H5PApi\H5PFileStorageInterface;
@@ -72,7 +73,7 @@ class H5PLibraryUploadForm extends FormBase {
 
     $h5p_default_path = $interface->getOption('default_path', 'h5p');
     $temporary_file_path = 'public://' . $h5p_default_path . '/temp/' . uniqid('h5p-');
-    file_prepare_directory($temporary_file_path, FILE_CREATE_DIRECTORY);
+    \Drupal::service('file_system')->prepareDirectory($temporary_file_path, FileSystemInterface::CREATE_DIRECTORY);
 
     $file = file_save_upload('h5p', $validators, $temporary_file_path);
     if (sizeof($file) !== 0 && $file[0] !== FALSE) {
