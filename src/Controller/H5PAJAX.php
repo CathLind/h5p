@@ -2,12 +2,11 @@
 
 namespace Drupal\h5p\Controller;
 
-use Drupal\Core\Url;
+use Drupal\Core\Cache\Cache;
 use Drupal\Core\Controller\ControllerBase;
 use Drupal\Core\Database\Connection;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\HttpFoundation\JsonResponse;
-use Drupal\h5p\H5PDrupal\H5PDrupal;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Drupal\h5p\Event\FinishedEvent;
 
@@ -128,7 +127,7 @@ class H5PAJAX extends ControllerBase {
 
       if ($data === '0') {
         // Remove data
-        db_delete('h5p_content_user_data')
+        \Drupal::database()->delete('h5p_content_user_data')
           ->condition('content_main_id', $content_main_id)
           ->condition('data_id', $data_id)
           ->condition('user_id', $user->id())
@@ -140,7 +139,7 @@ class H5PAJAX extends ControllerBase {
         $invalidate = ($invalidate === '0' ? 0 : 1);
 
         // Determine if we should update or insert
-        $update = db_query("SELECT content_main_id
+        $update = \Drupal::database()->query("SELECT content_main_id
                                    FROM {h5p_content_user_data}
                                    WHERE content_main_id = :content_main_id
                                      AND user_id = :user_id
@@ -155,7 +154,7 @@ class H5PAJAX extends ControllerBase {
 
         if ($update === FALSE) {
           // Insert new data
-          db_insert('h5p_content_user_data')
+          \Drupal::database()->insert('h5p_content_user_data')
             ->fields(array(
               'user_id' => $user->id(),
               'content_main_id' => $content_main_id,
@@ -170,7 +169,7 @@ class H5PAJAX extends ControllerBase {
         }
         else {
           // Update old data
-          db_update('h5p_content_user_data')
+          \Drupal::database()->update('h5p_content_user_data')
             ->fields(array(
               'timestamp' => time(),
               'data' => $data,
@@ -185,11 +184,11 @@ class H5PAJAX extends ControllerBase {
         }
       }
 
-      \Drupal\Core\Cache\Cache::invalidateTags(['h5p_content:' . $content_main_id]);
+      Cache::invalidateTags(['h5p_content:' . $content_main_id]);
       return new JsonResponse($response);
     } else {
       // Fetch data
-      $response->data = db_query("SELECT data FROM {h5p_content_user_data}
+      $response->data = \Drupal::database()->query("SELECT data FROM {h5p_content_user_data}
                                 WHERE user_id = :user_id
                                   AND content_main_id = :content_main_id
                                   AND data_id = :data_id
