@@ -2,7 +2,7 @@
 
 namespace Drupal\h5p\Event;
 
-use Symfony\Component\EventDispatcher\Event;
+use Symfony\Contracts\EventDispatcher\Event;
 
 /**
  * Wraps a node insertion demo event for event listeners.
