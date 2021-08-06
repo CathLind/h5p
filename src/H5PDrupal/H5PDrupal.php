@@ -443,8 +443,7 @@ class H5PDrupal implements \H5PFrameworkInterface {
    * Implements getLibraryId
    */
   public function getLibraryId($machineName, $majorVersion = NULL, $minorVersion = NULL) {
-    $library_id = db_query(
-        "SELECT library_id
+    $library_id = \Drupal::database()->query("SELECT library_id
            FROM {h5p_libraries}
           WHERE machine_name = :machine_name
             AND major_version = :major_version
@@ -467,8 +466,7 @@ class H5PDrupal implements \H5PFrameworkInterface {
       return TRUE;
     }
 
-    $result = db_query(
-        "SELECT 1
+    $result = \Drupal::database()->query("SELECT 1
            FROM {h5p_libraries}
           WHERE machine_name = :machineName
             AND major_version = :majorVersion
@@ -520,8 +518,7 @@ class H5PDrupal implements \H5PFrameworkInterface {
       $usage['content'] = -1;
     }
     else {
-      $usage['content'] = intval(db_query(
-          "SELECT COUNT(distinct nfd.id)
+      $usage['content'] = intval(\Drupal::database()->query("SELECT COUNT(distinct nfd.id)
              FROM {h5p_libraries} l
              JOIN {h5p_content_libraries} nl
                ON l.library_id = nl.library_id
@@ -534,7 +531,7 @@ class H5PDrupal implements \H5PFrameworkInterface {
       )->fetchField());
     }
 
-    $usage['libraries'] = intval(db_query(
+    $usage['libraries'] = intval(\Drupal::database()->query(
         "SELECT COUNT(*)
            FROM {h5p_libraries_libraries}
           WHERE required_library_id = :id",
@@ -558,7 +555,7 @@ class H5PDrupal implements \H5PFrameworkInterface {
     $contentCount = [];
 
     // Count content with same machine name, major and minor version
-    $results = db_query(
+    $results = \Drupal::database()->query(
         "SELECT l.machine_name AS name,
                 l.major_version AS major,
                 l.minor_version AS minor,
@@ -585,7 +582,7 @@ class H5PDrupal implements \H5PFrameworkInterface {
   public function getLibraryStats($type) {
     $count = [];
 
-    $results = db_query(
+    $results = \Drupal::database()->query(
         "SELECT library_name AS name,
                 library_version AS version,
                 num
@@ -609,7 +606,7 @@ class H5PDrupal implements \H5PFrameworkInterface {
    */
   public function getNumAuthors() {
 
-    $id = db_query(
+    $id = \Drupal::database()->query(
         "SELECT id
            FROM {h5p_content}
           LIMIT 1")->fetchField();
@@ -652,7 +649,7 @@ class H5PDrupal implements \H5PFrameworkInterface {
     }
 
     if ($new) {
-      $libraryId = db_insert('h5p_libraries')
+      $libraryId = \Drupal::database()->insert('h5p_libraries')
         ->fields(array(
           'machine_name' => $libraryData['machineName'],
           'title' => $libraryData['title'],
@@ -680,7 +677,7 @@ class H5PDrupal implements \H5PFrameworkInterface {
       }
     }
     else {
-      db_update('h5p_libraries')
+      \Drupal::database()->update('h5p_libraries')
         ->fields(array(
           'title' => $libraryData['title'],
           'patch_version' => $libraryData['patchVersion'],
@@ -710,12 +707,12 @@ class H5PDrupal implements \H5PFrameworkInterface {
     // invoke library installed
     \Drupal::moduleHandler()->invokeAll('h5p_library_installed', array($libraryData, $new));
 
-    db_delete('h5p_libraries_languages')
+    \Drupal::database()->delete('h5p_libraries_languages')
       ->condition('library_id', $libraryData['libraryId'])
       ->execute();
     if (isset($libraryData['language'])) {
       foreach ($libraryData['language'] as $languageCode => $languageJson) {
-        $id = db_insert('h5p_libraries_languages')
+        $id = \Drupal::database()->insert('h5p_libraries_languages')
           ->fields(array(
             'library_id' => $libraryData['libraryId'],
             'language_code' => $languageCode,
@@ -749,17 +746,19 @@ class H5PDrupal implements \H5PFrameworkInterface {
   }
 
   public function lockDependencyStorage() {
-    if (db_driver() === 'mysql') {
+    $database = \Drupal::service('database');
+    if (($database->driver() === 'mysql')) {
       // Only works for mysql, other DBs will have to use transactions.
 
       // db_transaction often deadlocks, we do it more brutally...
-      db_query('LOCK TABLES {h5p_libraries_libraries} write, {h5p_libraries} as hl read');
+      $database->query('LOCK TABLES {h5p_libraries_libraries} write, {h5p_libraries} as hl read');
     }
   }
 
   public function unlockDependencyStorage() {
-    if (db_driver() === 'mysql') {
-      db_query('UNLOCK TABLES');
+    $database = \Drupal::service('database');
+    if (($database->driver() === 'mysql')) {
+      $database->query('UNLOCK TABLES');
     }
   }
 
@@ -767,7 +766,7 @@ class H5PDrupal implements \H5PFrameworkInterface {
    * Implements deleteLibraryDependencies
    */
   public function deleteLibraryDependencies($libraryId) {
-    db_delete('h5p_libraries_libraries')
+    \Drupal::database()->delete('h5p_libraries_libraries')
       ->condition('library_id', $libraryId)
       ->execute();
   }
@@ -776,8 +775,7 @@ class H5PDrupal implements \H5PFrameworkInterface {
    * Implements deleteLibrary. Will delete a library's data both in the database and file system
    */
   public function deleteLibrary($libraryId) {
-    $library = db_query(
-        "SELECT *
+    $library = \Drupal::database()->query("SELECT *
            FROM {h5p_libraries}
           WHERE library_id = :id",
         [
@@ -789,9 +787,9 @@ class H5PDrupal implements \H5PFrameworkInterface {
     \H5PCore::deleteFileTree(self::getRelativeH5PPath() . "/libraries/{$library->machine_name}-{$library->major_version}.{$library->minor_version}");
 
     // Delete data in database (won't delete content)
-    db_delete('h5p_libraries_libraries')->condition('library_id', $libraryId)->execute();
-    db_delete('h5p_libraries_languages')->condition('library_id', $libraryId)->execute();
-    db_delete('h5p_libraries')->condition('library_id', $libraryId)->execute();
+    \Drupal::database()->delete('h5p_libraries_libraries')->condition('library_id', $libraryId)->execute();
+    \Drupal::database()->delete('h5p_libraries_languages')->condition('library_id', $libraryId)->execute();
+    \Drupal::database()->delete('h5p_libraries')->condition('library_id', $libraryId)->execute();
   }
 
   /**
@@ -799,7 +797,7 @@ class H5PDrupal implements \H5PFrameworkInterface {
    */
   public function saveLibraryDependencies($libraryId, $dependencies, $dependency_type) {
     foreach ($dependencies as $dependency) {
-      $query = db_select('h5p_libraries', 'hl');
+      $query = \Drupal::database()->select('h5p_libraries', 'hl');
       $query->addExpression($libraryId);
       $query->addField('hl', 'library_id');
       $query->addExpression("'{$dependency_type}'");
@@ -807,7 +805,7 @@ class H5PDrupal implements \H5PFrameworkInterface {
       $query->condition('major_version', $dependency['majorVersion']);
       $query->condition('minor_version', $dependency['minorVersion']);
 
-      db_insert('h5p_libraries_libraries')
+      \Drupal::database()->insert('h5p_libraries_libraries')
         /*
          * TODO: The order of the required_library_id and library_id below is reversed,
          * to match the order of the fields in the select statement. We should rather
@@ -893,7 +891,7 @@ class H5PDrupal implements \H5PFrameworkInterface {
    */
   public function resetContentUserData($contentId) {
     // Reset user datas for this content
-    db_update('h5p_content_user_data')
+    \Drupal::database()->update('h5p_content_user_data')
       ->fields(array(
         'timestamp' => time(),
         'data' => 'RESET'
@@ -922,8 +920,7 @@ class H5PDrupal implements \H5PFrameworkInterface {
    * Implements copyLibraryUsage
    */
   public function copyLibraryUsage($contentId, $copyFromId, $contentMainId = NULL) {
-    db_query(
-        "INSERT INTO {h5p_content_libraries}
+    \Drupal::database()->query("INSERT INTO {h5p_content_libraries}
                      (content_id, library_id, dependency_type, drop_css, weight)
               SELECT :toId, hnl.library_id, hnl.dependency_type, hnl.drop_css, hnl.weight
                 FROM {h5p_content_libraries} hnl
@@ -943,12 +940,12 @@ class H5PDrupal implements \H5PFrameworkInterface {
     $this->deleteLibraryUsage($contentId);
 
     // Remove content points
-    db_delete('h5p_points')
+    \Drupal::database()->delete('h5p_points')
       ->condition('content_id', $contentId)
       ->execute();
 
     // Remove content user data
-    db_delete('h5p_content_user_data')
+    \Drupal::database()->delete('h5p_content_user_data')
       ->condition('content_main_id', $contentId)
       ->execute();
   }
@@ -957,7 +954,7 @@ class H5PDrupal implements \H5PFrameworkInterface {
    * Implements deleteLibraryUsage
    */
   public function deleteLibraryUsage($contentId) {
-    db_delete('h5p_content_libraries')
+    \Drupal::database()->delete('h5p_content_libraries')
       ->condition('content_id', $contentId)
       ->execute();
   }
@@ -974,7 +971,7 @@ class H5PDrupal implements \H5PFrameworkInterface {
     }
     foreach ($librariesInUse as $dependency) {
       $dropCss = in_array($dependency['library']['machineName'], $dropLibraryCssList) ? 1 : 0;
-      db_insert('h5p_content_libraries')
+      \Drupal::database()->insert('h5p_content_libraries')
         ->fields(array(
           'content_id' => $contentId,
           'library_id' => $dependency['library']['libraryId'],
@@ -990,8 +987,7 @@ class H5PDrupal implements \H5PFrameworkInterface {
    * Implements loadLibrary
    */
   public function loadLibrary($machineName, $majorVersion, $minorVersion) {
-    $library = db_query(
-        "SELECT library_id,
+    $library = \Drupal::database()->query("SELECT library_id,
                 machine_name,
                 title,
                 major_version,
@@ -1023,7 +1019,7 @@ class H5PDrupal implements \H5PFrameworkInterface {
     $library = \H5PCore::snakeToCamel($library);
 
     // Load dependencies
-    $result = db_query(
+   $result = \Drupal::database()->query(
         "SELECT hl.machine_name AS name,
                 hl.major_version AS major,
                 hl.minor_version AS minor,
@@ -1052,8 +1048,7 @@ class H5PDrupal implements \H5PFrameworkInterface {
    * Implements loadLibrarySemantics().
    */
   public function loadLibrarySemantics($machineName, $majorVersion, $minorVersion) {
-    $semantics = db_query(
-        "SELECT semantics
+    $semantics = \Drupal::database()->query("SELECT semantics
            FROM {h5p_libraries}
           WHERE machine_name = :machine_name
             AND major_version = :major_version
@@ -1106,7 +1101,7 @@ class H5PDrupal implements \H5PFrameworkInterface {
       $queryArgs[':dt'] = $type;
     }
     $query .= " ORDER BY hnl.weight";
-    $result = db_query($query, $queryArgs);
+    $result = \Drupal::database()->query($query, $queryArgs);
 
     $dependencies = [];
     while ($dependency = $result->fetchObject()) {
@@ -1220,7 +1215,7 @@ class H5PDrupal implements \H5PFrameworkInterface {
     _drupal_flush_css_js();
 
     // Clear field view cache for ALL H5P content
-    \Drupal\Core\Cache\Cache::invalidateTags(['h5p_content']);
+    Cache::invalidateTags(['h5p_content']);
   }
 
   /**
@@ -1230,7 +1225,7 @@ class H5PDrupal implements \H5PFrameworkInterface {
    * @return int
    */
   public function getNumNotFiltered() {
-    return intval(db_query("SELECT COUNT(id) FROM {h5p_content} WHERE filtered_parameters IS NULL AND library_id > 0")->fetchField());
+    return intval(\Drupal::database()->query("SELECT COUNT(id) FROM {h5p_content} WHERE filtered_parameters IS NULL AND library_id > 0")->fetchField());
   }
 
   /**
@@ -1238,14 +1233,14 @@ class H5PDrupal implements \H5PFrameworkInterface {
    */
   public function getNumContent($library_id, $skip = NULL) {
     $skip_query = empty($skip) ? '' : " AND id NOT IN ($skip)";
-    return intval(db_query('SELECT COUNT(id) FROM {h5p_content} WHERE library_id = :id' . $skip_query, [':id' => $library_id])->fetchField());
+    return intval(\Drupal::database()->query('SELECT COUNT(id) FROM {h5p_content} WHERE library_id = :id' . $skip_query, [':id' => $library_id])->fetchField());
   }
 
   /**
    * Implements isContentSlugAvailable
    */
   public function isContentSlugAvailable($slug) {
-    return !db_query('SELECT slug FROM {h5p_content} WHERE slug = :slug', [':slug' => $slug])->fetchField();
+    return !\Drupal::database()->query('SELECT slug FROM {h5p_content} WHERE slug = :slug', [':slug' => $slug])->fetchField();
   }
 
   /**
@@ -1269,7 +1264,7 @@ class H5PDrupal implements \H5PFrameworkInterface {
   /**
    * Implements hasPermission
    *
-   * @param H5PPermission $permission
+   * @param \H5PPermission $permission
    * @param boolean $canUpdateEntity
    * @return bool
    */
@@ -1315,12 +1310,12 @@ class H5PDrupal implements \H5PFrameworkInterface {
    */
   public function replaceContentTypeCache($contentTypeCache) {
     // Replace existing cache
-    db_delete('h5p_libraries_hub_cache')
+    \Drupal::database()->delete('h5p_libraries_hub_cache')
       ->execute();
     foreach ($contentTypeCache->contentTypes as $ct) {
       $created_at = new \DateTime($ct->createdAt);
       $updated_at = new \DateTime($ct->updatedAt);
-      db_insert('h5p_libraries_hub_cache')
+      \Drupal::database()->insert('h5p_libraries_hub_cache')
         ->fields(array(
           'machine_name' => $ct->id,
           'major_version' => $ct->version->major,
@@ -1352,7 +1347,7 @@ class H5PDrupal implements \H5PFrameworkInterface {
    * Implements loadAddons
    */
   public function loadAddons() {
-    $result = db_query("SELECT l1.library_id, l1.machine_name, l1.major_version, l1.minor_version, l1.patch_version, l1.add_to, l1.preloaded_js, l1.preloaded_css
+    $result = \Drupal::database()->query("SELECT l1.library_id, l1.machine_name, l1.major_version, l1.minor_version, l1.patch_version, l1.add_to, l1.preloaded_js, l1.preloaded_css
                           FROM {h5p_libraries} l1
                      LEFT JOIN {h5p_libraries} l2 ON l1.machine_name = l2.machine_name AND
                                                      (l1.major_version < l2.major_version OR
@@ -1382,8 +1377,7 @@ class H5PDrupal implements \H5PFrameworkInterface {
    * Implements libraryHasUpgrade
    */
   public function libraryHasUpgrade($library) {
-    return !!db_query(
-      "SELECT library_id
+    return !!\Drupal::database()->query("SELECT library_id
          FROM {h5p_libraries}
         WHERE machine_name = :name
           AND (major_version > :major
