@@ -139,20 +139,11 @@ abstract class H5PWidgetBase extends WidgetBase {
    * @return boolean
    */
   private static function doNewRevision(FormStateInterface $form_state) {
-    $form_object = $form_state->getFormObject();
-    if (!($form_object instanceof \Drupal\Core\Entity\EntityFormInterface)) {
-      // Not an entity form, nothing to alter.
-      return FALSE;
-    }
-    $entity = $form_object->getEntity();
-
-    // Determine if this is a new revision
-    $is_new_revision = ($entity->getEntityType()->hasKey('revision') && $form_state->getValue('revision'));
-
+    
     // Determine if we do revisioning for H5P content
     // (may be disabled to save disk space)
     $interface = H5PDrupal::getInstance();
-    return $interface->getOption('revisioning', TRUE) && $is_new_revision;
+    return $interface->getOption('revisioning', FALSE);
   }
 
 }
