@@ -2,6 +2,7 @@
 
 namespace Drupal\h5peditor\H5PEditor;
 
+use Drupal\Core\File\FileSystemInterface;
 use Drupal\file\Entity\File;
 use Drupal\h5p\H5PDrupal\H5PDrupal;
 
@@ -18,16 +19,14 @@ class H5PEditorDrupalStorage implements \H5peditorStorage {
    * @return string Translation in JSON format
    */
   public function getLanguage($machineName, $majorVersion, $minorVersion, $languageCode) {
-    $lang = db_query(
-      "SELECT language_json
+    $lang = \Drupal::database()->query("SELECT language_json
            FROM {h5p_libraries_languages} hlt
            JOIN {h5p_libraries} hl
              ON hl.library_id = hlt.library_id
           WHERE hl.machine_name = :name
             AND hl.major_version = :major
             AND hl.minor_version = :minor
-            AND hlt.language_code = :lang",
-      array(
+            AND hlt.language_code = :lang", array(
         ':name' => $machineName,
         ':major' => $majorVersion,
         ':minor' => $minorVersion,
@@ -46,15 +45,13 @@ class H5PEditorDrupalStorage implements \H5peditorStorage {
    * @return array List of possible language codes
    */
   public function getAvailableLanguages($machineName, $majorVersion, $minorVersion) {
-    $results = db_query(
-        "SELECT language_code
+    $results = \Drupal::database()->query("SELECT language_code
            FROM {h5p_libraries_languages} hlt
            JOIN {h5p_libraries} hl
              ON hl.library_id = hlt.library_id
           WHERE hl.machine_name = :name
             AND hl.major_version = :major
-            AND hl.minor_version = :minor",
-        array(
+            AND hl.minor_version = :minor", array(
           ':name' => $machineName,
           ':major' => $majorVersion,
           ':minor' => $minorVersion
