@@ -2,7 +2,6 @@
 
 namespace Drupal\h5p\Plugin\Field\FieldFormatter;
 
-use Drupal\Core\Asset\AssetCollectionOptimizerInterface;
 use Drupal\Core\Field\FormatterBase;
 use Drupal\Core\Field\FieldItemListInterface;
 use Drupal\h5p\H5PDrupal\H5PDrupal;
