@@ -2,11 +2,11 @@
 
 namespace Drupal\h5p\H5PDrupal;
 
+use Drupal\h5peditor\H5PEditor\H5PEditorDrupalStorage;
+use Drupal\Core\Cache\Cache;
 use Drupal\h5p\Entity\H5PContent;
-use Drupal\h5peditor\H5PEditor;
 use Drupal\Core\Url;
 use Drupal\Core\StreamWrapper\PublicStream;
-use Drupal\Component\Utility\UrlHelper;
 
 class H5PDrupal implements \H5PFrameworkInterface {
   private $h5pPath, $folderPath;
@@ -53,7 +53,7 @@ class H5PDrupal implements \H5PFrameworkInterface {
     }
     else {
       // Get runtime cache
-      list($interface, $core) = $instances[$instance];
+      [$interface, $core] = $instances[$instance];
     }
 
     switch ($type) {
@@ -199,6 +199,7 @@ class H5PDrupal implements \H5PFrameworkInterface {
    *
    * @param string[] $filePaths
    * @param AssetCollectionOptimizerInterface $optimizer
+   * @param $optimizer
    * @param array $assetConfig
    *
    * @return string[]
@@ -234,7 +235,7 @@ class H5PDrupal implements \H5PFrameworkInterface {
   public function removeOldLogEvents() {
     $older_than = (time() - \H5PEventBase::$log_time);
 
-    db_delete('h5p_events')
+    \Drupal::database()->delete('h5p_events')
       ->condition('created_at', $older_than, '<')
       ->execute();
   }
@@ -262,7 +263,7 @@ class H5PDrupal implements \H5PFrameworkInterface {
    */
   public function getPlatformInfo() {
 
-    $h5p_info = system_get_info('module', 'h5p');
+    $h5p_info = \Drupal::service('extension.list.module')->getExtensionInfo('h5p');
 
     return [
       'name' => 'drupal',
@@ -304,7 +305,7 @@ class H5PDrupal implements \H5PFrameworkInterface {
 
     if ($stream && empty($response->error)) {
       // Create file from data
-      H5PEditor\H5peditorDrupalStorage::saveFileTemporarily($response_data);
+      H5PEditorDrupalStorage::saveFileTemporarily($response_data);
       // TODO: Cannot rely on H5PEditor module – Perhaps we could use the
       // save_to/sink option to save directly to file when streaming ?
       // http://guzzle.readthedocs.io/en/latest/request-options.html#sink-option
@@ -323,7 +324,7 @@ class H5PDrupal implements \H5PFrameworkInterface {
    * @param string $tutorialUrl
    */
   public function setLibraryTutorialUrl($machineName, $tutorialUrl) {
-    db_update('h5p_libraries')
+    \Drupal::database()->update('h5p_libraries')
       ->fields([
         'tutorial_url' => $tutorialUrl,
       ])
@@ -345,7 +346,7 @@ class H5PDrupal implements \H5PFrameworkInterface {
       'code' => $code,
       'message' => $message
     );
-    drupal_set_message($message, 'error');
+    \Drupal::messenger()->addError($message);
   }
 
   /**
@@ -353,7 +354,7 @@ class H5PDrupal implements \H5PFrameworkInterface {
    */
   public function setInfoMessage($message) {
     $this->messages['info'][] = $message;
-    drupal_set_message($message);
+    \Drupal::messenger()->addStatus($message);
   }
 
   /**
@@ -365,7 +366,7 @@ class H5PDrupal implements \H5PFrameworkInterface {
     }
     $messages = $this->messages[$type];
     $this->messages[$type] = array();
-    drupal_get_messages($type === 'info' ? 'status' : $type, TRUE); // Prevent messages from displaying twice
+    \Drupal::messenger()->messagesByType($type === 'info' ? 'status' : $type); // Prevent messages from displaying twice
     return $messages;
   }
 
@@ -410,8 +411,7 @@ class H5PDrupal implements \H5PFrameworkInterface {
    * Implements loadLibraries
    */
   public function loadLibraries() {
-    $res = db_query(
-        "SELECT library_id AS id,
+    $$res = \Drupal::database()->query("SELECT library_id AS id,
                 machine_name AS name,
                 title,
                 major_version, minor_version, patch_version,
