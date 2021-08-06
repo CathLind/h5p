@@ -136,8 +136,7 @@ class H5PContent extends ContentEntityBase implements ContentEntityInterface {
    * Load library used by content
    */
   protected function loadLibrary() {
-    $this->library = db_query(
-        "SELECT  title,
+    $this->library = \Drupal::database()->query("SELECT  title,
                  machine_name AS name,
                  major_version AS major,
                  minor_version AS minor,
@@ -301,8 +300,7 @@ class H5PContent extends ContentEntityBase implements ContentEntityInterface {
     }
 
     // Load user data for content
-    $results = db_query(
-        "SELECT sub_content_id, data_id, data
+    $results = \Drupal::database()->query("SELECT sub_content_id, data_id, data
            FROM {h5p_content_user_data}
           WHERE user_id = :user_id
             AND content_main_id = :content_id
