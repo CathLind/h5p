@@ -150,8 +150,7 @@ class H5PEditorDrupalAjax implements \H5PEditorAjaxInterface {
         ':machine_name' => $parsedLib['machineName'],
         ':major_version' => $parsedLib['majorVersion'],
         ':minor_version' => $parsedLib['minorVersion'],
-        ':language_code' => $language_code)
-      ':language_code' => $language_code))->fetchField();
+        ':language_code' => $language_code))->fetchField();
 
       if ($translation !== FALSE) {
         $translations[$library] = $translation;
