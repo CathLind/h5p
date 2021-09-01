@@ -411,7 +411,7 @@ class H5PDrupal implements \H5PFrameworkInterface {
    * Implements loadLibraries
    */
   public function loadLibraries() {
-    $$res = \Drupal::database()->query("SELECT library_id AS id,
+    $res = \Drupal::database()->query("SELECT library_id AS id,
                 machine_name AS name,
                 title,
                 major_version, minor_version, patch_version,
