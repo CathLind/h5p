@@ -419,8 +419,7 @@ class H5PDrupal implements \H5PFrameworkInterface {
            FROM {h5p_libraries}
        ORDER BY title ASC,
                 major_version ASC,
-                minor_version ASC"
-    );
+                minor_version ASC");
 
     $libraries = [];
     foreach ($res as $library) {
